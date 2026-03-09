@@ -11,37 +11,44 @@ BASE_YDL_OPTS = {
     'nopart': True, # Fixes WinError 32 on Windows by not creating .part files
     'quiet': True,
     'no_warnings': True,
+    'extractor_args': {'youtube': {'player_client': ['android']}},
 }
+
+def _get_ydl_opts() -> dict:
+    """Build yt-dlp options with dynamic cookie and extractor_args."""
+    opts = BASE_YDL_OPTS.copy()
+    if os.path.exists("cookies.txt"):
+        opts['cookiefile'] = 'cookies.txt'
+    return opts
+
+def _get_ydl_opts_no_cookies() -> dict:
+    """Build yt-dlp options WITHOUT cookies (fallback)."""
+    return BASE_YDL_OPTS.copy()
 
 async def download_video(url: str) -> str:
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
-    
-    ydl_opts: dict = BASE_YDL_OPTS.copy()
-    if os.path.exists("cookies.txt"):
-        ydl_opts['cookiefile'] = 'cookies.txt'
-    else:
-        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
-    
-    ydl_opts.update({
-        'format': 'best[filesize<50M]/best',
-        'outtmpl': output_template,
-    })
 
-    def _download():
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.extract_info(url, download=True)
-            return file_id
+    for get_opts in [_get_ydl_opts, _get_ydl_opts_no_cookies]:
+        ydl_opts = get_opts()
+        ydl_opts['format'] = 'best'
+        ydl_opts['outtmpl'] = output_template
 
-    try:
-        f_id = await asyncio.to_thread(_download)
-        for file in os.listdir(DOWNLOAD_DIR):
-            if file.startswith(f_id):
-                return os.path.join(DOWNLOAD_DIR, file)
-        return None
-    except Exception as e:
-        print(f"Error downloading video: {e}")
-        return None
+        def _download():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.extract_info(url, download=True)
+                return file_id
+
+        try:
+            f_id = await asyncio.to_thread(_download)
+            for file in os.listdir(DOWNLOAD_DIR):
+                if file.startswith(f_id):
+                    return os.path.join(DOWNLOAD_DIR, file)
+            return None
+        except Exception as e:
+            print(f"Error downloading video (retrying without cookies): {e}")
+            continue  # Try next opts set
+    return None
 
 async def download_audio(url: str) -> str:
     """
@@ -50,59 +57,49 @@ async def download_audio(url: str) -> str:
     """
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
-    
-    ydl_opts: dict = BASE_YDL_OPTS.copy()
-    if os.path.exists("cookies.txt"):
-        ydl_opts['cookiefile'] = 'cookies.txt'
-    else:
-        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
-        
-    ydl_opts.update({
-        'format': 'best',
-        'outtmpl': output_template,
-    })
 
-    def _download():
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.extract_info(url, download=True)
-            return file_id
+    for get_opts in [_get_ydl_opts, _get_ydl_opts_no_cookies]:
+        ydl_opts = get_opts()
+        ydl_opts['format'] = 'best'
+        ydl_opts['outtmpl'] = output_template
 
-    try:
-        f_id = await asyncio.to_thread(_download)
-        for file in os.listdir(DOWNLOAD_DIR):
-            if file.startswith(f_id):
-                return os.path.join(DOWNLOAD_DIR, file)
-        return None
-    except Exception as e:
-        print(f"Error downloading audio: {e}")
-        return None
+        def _download():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.extract_info(url, download=True)
+                return file_id
+
+        try:
+            f_id = await asyncio.to_thread(_download)
+            for file in os.listdir(DOWNLOAD_DIR):
+                if file.startswith(f_id):
+                    return os.path.join(DOWNLOAD_DIR, file)
+            return None
+        except Exception as e:
+            print(f"Error downloading audio (retrying without cookies): {e}")
+            continue
+    return None
 
 async def extract_metadata(url: str) -> dict:
-    ydl_opts: dict = BASE_YDL_OPTS.copy()
-    if os.path.exists("cookies.txt"):
-        ydl_opts['cookiefile'] = 'cookies.txt'
-    else:
-        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+    for get_opts in [_get_ydl_opts, _get_ydl_opts_no_cookies]:
+        ydl_opts = get_opts()
+        ydl_opts['extract_flat'] = True
 
-    ydl_opts.update({
-        'extract_flat': True,
-    })
+        def _extract():
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                return ydl.extract_info(url, download=False)
 
-    def _extract():
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            return ydl.extract_info(url, download=False)
-
-    try:
-        info = await asyncio.to_thread(_extract)
-        if info:
-            track = info.get('track') or info.get('title')
-            artist = info.get('artist') or info.get('uploader')
-            if track:
-                return {
-                    'title': track,
-                    'artist': artist
-                }
-        return None
-    except Exception as e:
-        print(f"Error extracting metadata: {e}")
-        return None
+        try:
+            info = await asyncio.to_thread(_extract)
+            if info:
+                track = info.get('track') or info.get('title')
+                artist = info.get('artist') or info.get('uploader')
+                if track:
+                    return {
+                        'title': track,
+                        'artist': artist
+                    }
+            return None
+        except Exception as e:
+            print(f"Error extracting metadata (retrying without cookies): {e}")
+            continue
+    return None
