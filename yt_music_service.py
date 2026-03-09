@@ -29,7 +29,7 @@ async def search_and_download_music(title: str, artist: str = "", url: str = Non
     if os.path.exists("cookies.txt"):
         ydl_opts['cookiefile'] = 'cookies.txt'
     else:
-        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android']}}
+        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
 
     def _download():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -60,7 +60,7 @@ async def search_music_text(query: str, limit: int = 10) -> list:
     if os.path.exists("cookies.txt"):
         ydl_opts['cookiefile'] = 'cookies.txt'
     else:
-        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android']}}
+        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
     
     def _search():
         search_query = f"ytsearch{limit}:{query}"

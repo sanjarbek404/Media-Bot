@@ -12,17 +12,17 @@ BASE_YDL_OPTS = {
     'quiet': True,
     'no_warnings': True,
 }
-if os.path.exists("cookies.txt"):
-    BASE_YDL_OPTS['cookiefile'] = 'cookies.txt'
-else:
-    # Fallback to bypass sign-in if cookies aren't provided
-    BASE_YDL_OPTS['extractor_args'] = {'youtube': {'player_client': ['android']}}
 
 async def download_video(url: str) -> str:
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
     
-    ydl_opts = BASE_YDL_OPTS.copy()
+    ydl_opts: dict = BASE_YDL_OPTS.copy()
+    if os.path.exists("cookies.txt"):
+        ydl_opts['cookiefile'] = 'cookies.txt'
+    else:
+        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+    
     ydl_opts.update({
         'format': 'best[filesize<50M]/best',
         'outtmpl': output_template,
@@ -51,7 +51,12 @@ async def download_audio(url: str) -> str:
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
     
-    ydl_opts = BASE_YDL_OPTS.copy()
+    ydl_opts: dict = BASE_YDL_OPTS.copy()
+    if os.path.exists("cookies.txt"):
+        ydl_opts['cookiefile'] = 'cookies.txt'
+    else:
+        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+        
     ydl_opts.update({
         'format': 'best',
         'outtmpl': output_template,
@@ -73,7 +78,12 @@ async def download_audio(url: str) -> str:
         return None
 
 async def extract_metadata(url: str) -> dict:
-    ydl_opts = BASE_YDL_OPTS.copy()
+    ydl_opts: dict = BASE_YDL_OPTS.copy()
+    if os.path.exists("cookies.txt"):
+        ydl_opts['cookiefile'] = 'cookies.txt'
+    else:
+        ydl_opts['extractor_args'] = {'youtube': {'player_client': ['android', 'web']}}
+
     ydl_opts.update({
         'extract_flat': True,
     })
