@@ -38,10 +38,9 @@ async def search_and_download_music(title: str, artist: str = "", url: str = Non
 
     try:
         f_id = await asyncio.to_thread(_download)
-        # yt-dlp replaces characters in real titles, so we search by our prefix
-        search_prefix = f"{f_id}_dl_"
+        # yt-dlp replaces characters in real titles. We just search for the unique ID.
         for file in os.listdir(MUSIC_DIR):
-            if file.startswith(search_prefix):
+            if file.startswith(f_id):
                 return os.path.join(MUSIC_DIR, file)
         return None
     except Exception as e:
