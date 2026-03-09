@@ -1,0 +1,30 @@
+# Environments
+.env
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary downloads and processed files
+downloads/
+music/
+
+# Database files
+database.db
+*.sqlite3
+*.db
+
+# Sensitive credentials
+cookies.txt
+*.cookie
+
+# IDEs and Tools
+.vscode/
+.idea/
+.gemini/
