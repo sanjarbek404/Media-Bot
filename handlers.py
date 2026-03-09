@@ -116,7 +116,7 @@ async def process_url_message(message: Message, url: str):
     lang = await db.get_user_lang(message.from_user.id)
     status_msg = await message.answer(get_text('wait', lang))
 
-    # 1. Download Video First
+    # Download Video
     video_path = await download_video(url)
     if not video_path:
         await status_msg.edit_text(get_text('video_err', lang))
@@ -139,11 +139,7 @@ async def process_url_message(message: Message, url: str):
         await status_msg.delete()
     except Exception as e:
         print(f"Video upload error: {e}")
-        import traceback
-        with open("last_error.txt", "w") as f:
-            f.write(traceback.format_exc())
-            f.write(f"\nvideo_path was: {video_path}")
-        await status_msg.edit_text("❌ Videoni Telegramga yuborishda xatolik yuz berdi. Ehtimol video hajmi juda katta (50MB+).")
+        await status_msg.edit_text(get_text('unexpected_err', lang))
     finally:
         try:
             os.remove(video_path)

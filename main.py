@@ -28,12 +28,25 @@ async def main():
     # Secure cookies dynamically from Environment Variables (for Render deployment)
     yt_cookies = os.getenv("YOUTUBE_COOKIES")
     if yt_cookies:
-        # Save exact string format to cookies.txt 
-        # Replacing actual \\n literal from env with real newlines just in case
+        # Handle escaped newlines from env var
         formatted_cookies = yt_cookies.replace('\\n', '\n')
+        
+        # Ensure Netscape cookie header is present
+        if '# Netscape HTTP Cookie File' not in formatted_cookies:
+            formatted_cookies = '# Netscape HTTP Cookie File\n' + formatted_cookies
+        
         with open("cookies.txt", "w", encoding="utf-8") as f:
             f.write(formatted_cookies)
-        print("Successfully loaded cookies.txt from YOUTUBE_COOKIES environment variable!")
+        
+        # Validate: check if file has at least some cookie lines
+        cookie_lines = [l for l in formatted_cookies.split('\n') if l.strip() and not l.startswith('#')]
+        if cookie_lines:
+            print(f"Successfully loaded cookies.txt with {len(cookie_lines)} cookie entries!")
+        else:
+            print("WARNING: YOUTUBE_COOKIES env var was set but contains no valid cookie lines!")
+            os.remove("cookies.txt")  # Remove invalid cookies so fallback can work
+    else:
+        print("INFO: No YOUTUBE_COOKIES env var set. Using Android player_client fallback.")
 
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
