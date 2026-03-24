@@ -11,7 +11,7 @@ BASE_YDL_OPTS = {
     'nopart': True, # Fixes WinError 32 on Windows by not creating .part files
     'quiet': True,
     'no_warnings': True,
-    'extractor_args': {'youtube': {'player_client': ['android']}},
+    'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
 }
 
 def _get_ydl_opts() -> dict:
@@ -31,7 +31,7 @@ async def download_video(url: str) -> str:
 
     for get_opts in [_get_ydl_opts, _get_ydl_opts_no_cookies]:
         ydl_opts = get_opts()
-        ydl_opts['format'] = 'best'
+        ydl_opts['format'] = 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
         ydl_opts['outtmpl'] = output_template
 
         def _download():
@@ -60,7 +60,7 @@ async def download_audio(url: str) -> str:
 
     for get_opts in [_get_ydl_opts, _get_ydl_opts_no_cookies]:
         ydl_opts = get_opts()
-        ydl_opts['format'] = 'best'
+        ydl_opts['format'] = 'bestaudio/best'
         ydl_opts['outtmpl'] = output_template
 
         def _download():

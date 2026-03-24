@@ -9,7 +9,7 @@ os.makedirs(MUSIC_DIR, exist_ok=True)
 BASE_YDL_OPTS = {
     'quiet': True,
     'no_warnings': True,
-    'extractor_args': {'youtube': {'player_client': ['android']}},
+    'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
 }
 
 def _get_ydl_opts() -> dict:
@@ -27,13 +27,13 @@ async def search_and_download_music(title: str, artist: str = "", url: str = Non
     """
     Downloads music from a direct url if provided, else searches YouTube.
     """
-    url_or_query = url if url else f"ytsearch1:{title} {artist} audio"
+    url_or_query = url if url else f"scsearch1:{title} {artist}"
     file_id = str(uuid.uuid4())[:8]
     output_template = os.path.join(MUSIC_DIR, f"{file_id}_dl_%(title).50s.%(ext)s")
 
     for get_opts in [_get_ydl_opts, _get_ydl_opts_no_cookies]:
         ydl_opts = get_opts()
-        ydl_opts['format'] = 'best'
+        ydl_opts['format'] = 'bestaudio/best'
         ydl_opts['outtmpl'] = output_template
         ydl_opts['postprocessors'] = [{
             'key': 'FFmpegExtractAudio',
@@ -66,7 +66,7 @@ async def search_music_text(query: str, limit: int = 10) -> list:
         ydl_opts['extract_flat'] = 'in_playlist'
 
         def _search():
-            search_query = f"ytsearch{limit}:{query}"
+            search_query = f"scsearch{limit}:{query}"
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(search_query, download=False)
                 if 'entries' in info:
