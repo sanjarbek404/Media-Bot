@@ -25,9 +25,10 @@ def _get_ydl_opts_no_cookies() -> dict:
     """Build yt-dlp options WITHOUT cookies (fallback)."""
     return BASE_YDL_OPTS.copy()
 
-async def download_video(url: str) -> str:
+async def download_video(url: str) -> tuple[str | None, str]:
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
+    last_error = ""
 
     for get_opts in [_get_ydl_opts, _get_ydl_opts_no_cookies]:
         ydl_opts = get_opts()
@@ -43,12 +44,14 @@ async def download_video(url: str) -> str:
             f_id = await asyncio.to_thread(_download)
             for file in os.listdir(DOWNLOAD_DIR):
                 if file.startswith(f_id):
-                    return os.path.join(DOWNLOAD_DIR, file)
-            return None
+                    return (os.path.join(DOWNLOAD_DIR, file), "")
+            last_error = "File saved but not found in directory"
+            return (None, last_error)
         except Exception as e:
-            print(f"Error downloading video (retrying without cookies): {e}", flush=True)
+            last_error = str(e)
+            print(f"Error downloading video: {e}", flush=True)
             continue  # Try next opts set
-    return None
+    return (None, last_error)
 
 async def download_audio(url: str) -> str:
     """
