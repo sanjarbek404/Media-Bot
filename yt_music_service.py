@@ -7,8 +7,8 @@ MUSIC_DIR = "music"
 os.makedirs(MUSIC_DIR, exist_ok=True)
 
 BASE_YDL_OPTS = {
-    'quiet': True,
-    'no_warnings': True,
+    'quiet': False,
+    'no_warnings': False,
     'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
 }
 
@@ -48,7 +48,7 @@ async def search_and_download_music(title: str, artist: str = "", url: str = Non
                     return os.path.join(MUSIC_DIR, file)
             return None
         except Exception as e:
-            print(f"Error searching/downloading music (retrying without cookies): {e}")
+            print(f"Error searching/downloading music (retrying without cookies): {e}", flush=True)
             continue
     return None
 

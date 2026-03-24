@@ -9,8 +9,8 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 # Common options against anti-bot
 BASE_YDL_OPTS = {
     'nopart': True, # Fixes WinError 32 on Windows by not creating .part files
-    'quiet': True,
-    'no_warnings': True,
+    'quiet': False,
+    'no_warnings': False,
     'extractor_args': {'youtube': {'player_client': ['android', 'ios']}},
 }
 
@@ -31,7 +31,7 @@ async def download_video(url: str) -> str:
 
     for get_opts in [_get_ydl_opts, _get_ydl_opts_no_cookies]:
         ydl_opts = get_opts()
-        ydl_opts['format'] = 'best[height<=720][ext=mp4]/best[ext=mp4]/best'
+        ydl_opts['format'] = 'b'
         ydl_opts['outtmpl'] = output_template
 
         def _download():
@@ -46,7 +46,7 @@ async def download_video(url: str) -> str:
                     return os.path.join(DOWNLOAD_DIR, file)
             return None
         except Exception as e:
-            print(f"Error downloading video (retrying without cookies): {e}")
+            print(f"Error downloading video (retrying without cookies): {e}", flush=True)
             continue  # Try next opts set
     return None
 
@@ -75,7 +75,7 @@ async def download_audio(url: str) -> str:
                     return os.path.join(DOWNLOAD_DIR, file)
             return None
         except Exception as e:
-            print(f"Error downloading audio (retrying without cookies): {e}")
+            print(f"Error downloading audio (retrying without cookies): {e}", flush=True)
             continue
     return None
 
