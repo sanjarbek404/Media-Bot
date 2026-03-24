@@ -119,7 +119,7 @@ async def process_url_message(message: Message, url: str):
     # Download Video
     video_path, error_msg = await download_video(url)
     if not video_path:
-        await status_msg.edit_text(f"{get_text('video_err', lang)}\n\n🛠 Xatolik tafsiloti:\n`{error_msg}`", parse_mode="Markdown")
+        await status_msg.edit_text(get_text('video_err', lang))
         return
 
     # Create short id for callback

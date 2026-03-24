@@ -2,6 +2,7 @@ import asyncio
 import os
 import uuid
 import yt_dlp
+import aiohttp
 
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
@@ -25,10 +26,49 @@ def _get_ydl_opts_no_cookies() -> dict:
     """Build yt-dlp options WITHOUT cookies (fallback)."""
     return BASE_YDL_OPTS.copy()
 
+async def fetch_cobalt_url(url: str, is_audio: bool = False) -> str | None:
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+    data = {
+        "url": url,
+        "vQuality": "720",
+        "isAudioOnly": is_audio
+    }
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post("https://api.cobalt.tools/api/json", json=data, headers=headers) as resp:
+                if resp.status in [200, 201]:
+                    res = await resp.json()
+                    return res.get("url")
+    except Exception as e:
+        print(f"Cobalt api error: {e}", flush=True)
+    return None
+
 async def download_video(url: str) -> tuple[str | None, str]:
     file_id = str(uuid.uuid4())
     output_template = os.path.join(DOWNLOAD_DIR, f"{file_id}.%(ext)s")
     last_error = ""
+
+    # Primary Bypass: Try using Cobalt API to bypass YT blocks
+    cobalt_url = await fetch_cobalt_url(url)
+    if cobalt_url:
+        filepath = os.path.join(DOWNLOAD_DIR, f"{file_id}.mp4")
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(cobalt_url) as resp:
+                    if resp.status == 200:
+                        with open(filepath, 'wb') as f:
+                            while True:
+                                chunk = await resp.content.read(4096)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                        return (filepath, "")
+        except Exception as e:
+            print(f"Cobalt download error: {e}", flush=True)
 
     for get_opts in [_get_ydl_opts, _get_ydl_opts_no_cookies]:
         ydl_opts = get_opts()
